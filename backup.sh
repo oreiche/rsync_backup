@@ -17,9 +17,10 @@ function createinc() {
     local prev=${g_config[$(($1+3))]}
     local last="$(ls $g_backupdir/ | grep $prev | sort -n -t '.' -k 2 | tail -n1)"
 
-    if [ "$last" != "" ]; then
+    if [ "$last" != "" ] && 
+       [ "$last" != $prev.0 ]; then
         rm -rf $g_backupdir/$curr.1
-        cp -al $g_backupdir/$last $g_backupdir/$curr.1
+        mv $g_backupdir/$last $g_backupdir/$curr.1
     fi
 }
 
