@@ -139,16 +139,14 @@ function shiftInit() {
 
 function main() {
     local n=${#conf_stages[*]}
+    local retval=1
 
     if [ $(($n % 3)) -ne 0 ]; then
         echo "Configuration error: Malformed stages array."
-        exit 1
     elif [ ! -d $conf_sourcedir ]; then
         echo "Directory '$conf_sourcedir' does not exist."
-        exit 1
     elif [ ! -d $conf_backupdir ]; then
         echo "Directory '$conf_backupdir' does not exist."
-        exit 1
     else
         local i=$(($n - 3))
         while [ $i -ge 0 ]; do
@@ -162,9 +160,14 @@ function main() {
 
         shiftInit
         createInit
+
+        echo "Finished backup process."
+        retval=0
     fi
 
-    exit 0
+    echo
+
+    exit $retval
 }
 
 main
