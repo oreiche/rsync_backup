@@ -47,10 +47,20 @@ function createinit() {
         # Reuse the temp directory
         mv $g_backupdir/$curr.0 $g_backupdir/$curr.1
         mv $g_backupdir/$curr.tmp $g_backupdir/$curr.0
-        cp -al $g_backupdir/$curr.1/. $g_backupdir/$curr.0
-    else
+        if [[ $OSTYPE == *darwin* ]]; then
+            cd $g_backupdir/$curr.1
+            find . -print | cpio -pdlm $g_backupdir/$curr.0 2>/dev/null
+        else
+            cp -al $g_backupdir/$curr.1/. $g_backupdir/$curr.0
+        fi
+    elif [ -d $g_backupdir/$curr.0 ]; then
         rm -rf $g_backupdir/$curr.1
-        cp -al $g_backupdir/$curr.0 $g_backupdir/$curr.1
+        if [[ $OSTYPE == *darwin* ]]; then
+            cd $g_backupdir/$curr.0
+            find . -print | cpio -pdlm $g_backupdir/$curr.1 2>/dev/null
+        else
+            cp -al $g_backupdir/$curr.0 $g_backupdir/$curr.1
+        fi
     fi
 
     local excluded
