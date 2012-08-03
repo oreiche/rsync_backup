@@ -17,7 +17,7 @@ conf_name="day"
 # Number of snapshots to create
 conf_snapshots="6"
 
-# Further stages for storing older snapshots
+# Further stages for storing older snapshots (ascending interval length)
 conf_stages=(
     #NAME      MINUTES  SNAPSHOTS
     "week"      "10080" "3"
@@ -29,8 +29,16 @@ conf_stages=(
 
 ################################################################################
 
+## Time stamp of initial script execution (@see checkTimestamp())
 g_timestamp=$(date +%s)
 
+##
+## @brief Checks whether time stamp of stage is exceeded. Creates new time stamp
+##        for current stage if time stamp was exceeded or didn't exist.
+## @param  {Number} $1  Index of the stage in stages array.
+## @retval {String} "0" Time stamp was exceeded.
+## @retval {String} "1" Time stamp was not exceeded.
+##
 function checkTimestamp() {
     local curr=${conf_stages[$1]}
     local minutes=${conf_stages[$(($1+1))]}
@@ -49,6 +57,11 @@ function checkTimestamp() {
 
 ################################################################################
 
+##
+## @brief Create a new snapshot for current stage. Searches oldest snapshot of
+##        previous stage and moves it this stage.
+## @param {Number} $1 Index of the current stage in stages array.
+##
 function createStage() {
     local curr=${conf_stages[$1]}
     local prev
@@ -72,6 +85,11 @@ function createStage() {
 
 ################################################################################
 
+##
+## @brief Shifts all snapshots of current stage. The oldest snapshot will be
+##        deleted.
+## @param {Number} $1 Index of the current stage in stages array.
+##
 function shiftStage() {
     local curr=${conf_stages[$1]}
     local i=${conf_stages[$(($1+2))]}
@@ -89,6 +107,11 @@ function shiftStage() {
 
 ################################################################################
 
+##
+## @brief Creates a new snapshot for initial stage (@see conf_name). A previous
+##        shifting process might has reserved a temp directory which will be
+##        used to speed up the creation process.
+##
 function createInit() {
     echo "Creating new snapshot for initial stage '$conf_name'."
 
@@ -127,6 +150,11 @@ function createInit() {
 
 ################################################################################
 
+##
+## @brief Shifts all snapshots of the initial stage (@see conf_name). The oldest
+##        snapshot might be stored in temp directory to be used by the
+##        consecutive create function.
+##
 function shiftInit() {
     if [ -d $conf_backuppath/$conf_name.0 ]; then
         local i=$conf_snapshots
@@ -148,6 +176,13 @@ function shiftInit() {
 
 ################################################################################
 
+##
+## @brief Main backup function. Checks configuration parameters and starts to
+##        execute stages in reverse order. The last stage well always be the so
+##        called 'initial stage'.
+## @retval {String} "0" Configuration is valid and working paths do exist.
+## @retval {String} "1" Configuration is invalid or working paths don't exist.
+##
 function main() {
     local n=${#conf_stages[*]}
     local retval=1
