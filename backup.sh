@@ -8,11 +8,26 @@ g_default="day"
 g_snapshots="6"
 
 g_stages=(
-    #<name> <condition>          <snapshots>
-    "week"  "$(date +%w) == 0"    "4"
-    "month" "$(date +%d) == 01"  "11"
-    "year"  "$(date +%j) == 001"  "3"
+    #NAME      MINUTES  SNAPSHOTS
+    "week"      "10080" "3"
+    "month"     "40320" "2"
+    "quarter"  "120960" "1"
+    "halfyear" "241920" "1"
+    "year"     "483840" "3"
 )
+
+function checkTimestamp() {
+    local curr=${g_stages[$1]}
+    local minutes=${g_stages[$(($1+1))]}
+    local timestamp=$(cat $g_backupdir/$curr.stamp 2>/dev/null)
+
+    if [ "$timestamp" != "" ] &&
+       [ $((($(date +%s) - $timestamp) / 60)) -lt $minutes ]; then
+        return 1
+    fi
+
+    return 0
+}
 
 function createStage() {
     local curr=${g_stages[$1]}
@@ -32,6 +47,7 @@ function createStage() {
         rm -rf $g_backupdir/$curr.1
         mv $g_backupdir/$last $g_backupdir/$curr.1 2>/dev/null
     fi
+    echo $g_timestamp > $g_backupdir/$curr.stamp
 }
 
 function shiftStage() {
@@ -100,6 +116,8 @@ function shiftDefault() {
 }
 
 function main() {
+    g_timestamp=$(date +%s)
+
     local n=${#g_stages[*]}
 
     if [ $(($n % 3)) -ne 0 ]; then
@@ -114,7 +132,8 @@ function main() {
     else
         local i=$(($n - 3))
         while [ $i -ge 0 ]; do
-            if [ ${g_stages[$(($i+1))]} ]; then
+            checkTimestamp $i
+            if [ "$?" == "0" ]; then
                 shiftStage $i
                 createStage $i
             fi
