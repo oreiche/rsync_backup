@@ -119,20 +119,22 @@ function createInit() {
 ################################################################################
 
 function shiftInit() {
-    local i=$conf_snapshots
+    if [ -d $conf_backupdir/$conf_name.0 ]; then
+        local i=$conf_snapshots
 
-    echo "Shifting snapshots of initial stage '$conf_name'."
+        echo "Shifting snapshots of initial stage '$conf_name'."
 
-    if [ -d $conf_backupdir/$conf_name.$i ]; then
-        # Store as temp, this speeds up the whole operation
-        mv $conf_backupdir/$conf_name.$i $conf_backupdir/$conf_name.tmp
+        if [ -d $conf_backupdir/$conf_name.$i ]; then
+            # Store as temp, this speeds up the whole operation
+            mv $conf_backupdir/$conf_name.$i $conf_backupdir/$conf_name.tmp
+        fi
+
+        while [ $i -gt 1 ]; do
+            mv $conf_backupdir/$conf_name.$(($i-1)) \
+                $conf_backupdir/$conf_name.$i 2>/dev/null
+            i=$(($i-1))
+        done
     fi
-
-    while [ $i -gt 1 ]; do
-        mv $conf_backupdir/$conf_name.$(($i-1)) \
-            $conf_backupdir/$conf_name.$i 2>/dev/null
-        i=$(($i-1))
-    done
 }
 
 ################################################################################
