@@ -2,13 +2,22 @@
 #
 # (C) Oliver Reiche <oliver.reiche@siemens.com>
 
+# Source path to backup
 conf_sourcedir="/"
+
+# Destination path for storing the backup
 conf_backupdir="/backup"
+
+# Exclude paths from backup (relative to source path)
 conf_excludedirs=("dev" "mnt" "tmp")
 
+# Name of the snapshots to create (containing incremental backups)
 conf_name="day"
+
+# Number of snapshots to create
 conf_snapshots="6"
 
+# Further stages for storing older snapshots
 conf_stages=(
     #NAME      MINUTES  SNAPSHOTS
     "week"      "10080" "3"
