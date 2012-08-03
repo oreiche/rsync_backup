@@ -50,7 +50,8 @@ function createStage() {
     else
         prev=$conf_name
     fi
-    last="$(ls $conf_backupdir/ | grep $prev | sort -n -t '.' -k 2 | tail -n1)"
+    last="$(ls $conf_backupdir/ | grep $prev\.[[:digit:]] | \
+            sort -n -t '.' -k 2 | tail -n1)"
 
     if [ "$last" != "" ] && 
        [ "$last" != $prev.0 ]; then
@@ -70,7 +71,8 @@ function shiftStage() {
         echo "Shifting snapshots of stage '$curr'."
         rm -rf $conf_backupdir/$curr.$i
         while [ $i -gt 1 ]; do
-            mv $conf_backupdir/$curr.$(($i-1)) $conf_backupdir/$curr.$i 2>/dev/null
+            mv $conf_backupdir/$curr.$(($i-1)) \
+                $conf_backupdir/$curr.$i 2>/dev/null
             i=$(($i-1))
         done
     fi
