@@ -4,12 +4,14 @@ g_backupdir="/backup/"
 g_sourcedir="/"
 g_excludedirs=("dev" "mnt" "tmp")
 
+g_default="day"
+g_snapshots="6"
+
 g_stages=(
-    #<name> <condition> <number-of-backups>
+    #<name> <condition>          <snapshots>
     "year"  "$(date +%j) == 001"  "3"
     "month" "$(date +%d) == 01"  "11"
     "week"  "$(date +%w) == 0"    "4"
-    "day"   "true"                "6"
 )
 
 function createStage() {
@@ -39,27 +41,25 @@ function shiftStage() {
 }
 
 function createDefault() {
-    local curr=${g_stages[$1]}
+    echo "Creating new snapshot for default stage '$g_default'."
 
-    echo "Creating new snapshot for default stage '$curr'."
-
-    if [ -d $g_backupdir/$curr.tmp ]; then
+    if [ -d $g_backupdir/$g_default.tmp ]; then
         # Reuse the temp directory
-        mv $g_backupdir/$curr.0 $g_backupdir/$curr.1
-        mv $g_backupdir/$curr.tmp $g_backupdir/$curr.0
+        mv $g_backupdir/$g_default.0 $g_backupdir/$g_default.1
+        mv $g_backupdir/$g_default.tmp $g_backupdir/$g_default.0
         if [[ $OSTYPE == *darwin* ]]; then
-            cd $g_backupdir/$curr.1
-            find . -print | cpio -pdlm $g_backupdir/$curr.0 2>/dev/null
+            cd $g_backupdir/$g_default.1
+            find . -print | cpio -pdlm $g_backupdir/$g_default.0 2>/dev/null
         else
-            cp -al $g_backupdir/$curr.1/. $g_backupdir/$curr.0
+            cp -al $g_backupdir/$g_default.1/. $g_backupdir/$g_default.0
         fi
-    elif [ -d $g_backupdir/$curr.0 ]; then
-        rm -rf $g_backupdir/$curr.1
+    elif [ -d $g_backupdir/$g_default.0 ]; then
+        rm -rf $g_backupdir/$g_default.1
         if [[ $OSTYPE == *darwin* ]]; then
-            cd $g_backupdir/$curr.0
-            find . -print | cpio -pdlm $g_backupdir/$curr.1 2>/dev/null
+            cd $g_backupdir/$g_default.0
+            find . -print | cpio -pdlm $g_backupdir/$g_default.1 2>/dev/null
         else
-            cp -al $g_backupdir/$curr.0 $g_backupdir/$curr.1
+            cp -al $g_backupdir/$g_default.0 $g_backupdir/$g_default.1
         fi
     fi
 
@@ -73,22 +73,21 @@ function createDefault() {
         excluded="$excluded --exclude=$exclude"
     done
 
-    rsync -a --delete $excluded $g_sourcedir/ $g_backupdir/$curr.0/
+    rsync -a --delete $excluded $g_sourcedir/ $g_backupdir/$g_default.0/
 }
 
 function shiftDefault() {
-    local curr=${g_stages[$1]}
-    local i=${g_stages[$1+2]}
+    local i=$g_snapshots
 
-    echo "Shifting default stage '$curr'."
+    echo "Shifting default stage '$g_default'."
 
-    if [ -d $g_backupdir/$curr.$i ]; then
+    if [ -d $g_backupdir/$g_default.$i ]; then
         # Store as temp, this speeds up the whole operation
-        mv $g_backupdir/$curr.$i $g_backupdir/$curr.tmp
+        mv $g_backupdir/$g_default.$i $g_backupdir/$g_default.tmp
     fi
 
     while [ $i -gt 1 ]; do
-        mv $g_backupdir/$curr.$(($i-1)) $g_backupdir/$curr.$i 2>/dev/null
+        mv $g_backupdir/$g_default.$(($i-1)) $g_backupdir/$g_default.$i 1>/dev/null
         i=$(($i-1))
     done
 }
@@ -96,13 +95,12 @@ function shiftDefault() {
 function main() {
     local n=${#g_stages[*]}
 
-    if [ $(($n % 3)) -ne 0 ] ||
-       [ $n -lt 3 ]; then
+    if [ $(($n % 3)) -ne 0 ]; then
         echo "Configuration error."
         exit 1
     else
         local i=0
-        while [ $(($n-$i)) -ne 3 ]; do
+        while [ $i -ne $n ]; do
             if [ ${g_stages[$(($i+1))]} ]; then
                 shiftStage $i
                 createStage $i
@@ -110,10 +108,8 @@ function main() {
             i=$(($i+3))
         done
 
-        if [ ${g_stages[$(($i+1))]} ]; then
-            shiftDefault $i
-            createDefault $i
-        fi
+        shiftDefault $i
+        createDefault $i
     fi
 
     exit 0
