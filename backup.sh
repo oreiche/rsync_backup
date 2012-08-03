@@ -194,6 +194,8 @@ function main() {
     elif [ ! -d $conf_backuppath ]; then
         echo "Directory '$conf_backuppath' does not exist."
     else
+        echo "Starting backup of '$conf_sourcepath'."
+
         local i=$(($n - 3))
         while [ $i -ge 0 ]; do
             checkTimestamp $i
