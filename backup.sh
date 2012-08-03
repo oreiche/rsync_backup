@@ -9,9 +9,9 @@ g_snapshots="6"
 
 g_stages=(
     #<name> <condition>          <snapshots>
-    "year"  "$(date +%j) == 001"  "3"
-    "month" "$(date +%d) == 01"  "11"
     "week"  "$(date +%w) == 0"    "4"
+    "month" "$(date +%d) == 01"  "11"
+    "year"  "$(date +%j) == 001"  "3"
 )
 
 function createStage() {
@@ -105,17 +105,17 @@ function main() {
         echo "Directory '$g_backupdir' does not exist."
         exit 1
     else
-        local i=0
-        while [ $i -ne $n ]; do
+        local i=$(($n - 3))
+        while [ $i -ge 0 ]; do
             if [ ${g_stages[$(($i+1))]} ]; then
                 shiftStage $i
                 createStage $i
             fi
-            i=$(($i+3))
+            i=$(($i-3))
         done
 
-        shiftDefault $i
-        createDefault $i
+        shiftDefault
+        createDefault
     fi
 
     exit 0
