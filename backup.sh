@@ -96,7 +96,13 @@ function main() {
     local n=${#g_stages[*]}
 
     if [ $(($n % 3)) -ne 0 ]; then
-        echo "Configuration error."
+        echo "Configuration error: Malformed stages array."
+        exit 1
+    elif [ ! -d $g_sourcedir ]; then
+        echo "Directory '$g_sourcedir' does not exist."
+        exit 1
+    elif [ ! -d $g_backupdir ]; then
+        echo "Directory '$g_backupdir' does not exist."
         exit 1
     else
         local i=0
