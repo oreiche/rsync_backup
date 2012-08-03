@@ -20,7 +20,7 @@ function createStage() {
     local last
 
     if [ $1 -ge 3 ]; then
-        prev=${g_stages[$(($1+3))]}
+        prev=${g_stages[$(($1-3))]}
     else
         prev=$g_default
     fi
