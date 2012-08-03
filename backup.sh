@@ -16,17 +16,22 @@ g_stages=(
     "year"     "483840" "3"
 )
 
+g_timestamp=$(date +%s)
+
 function checkTimestamp() {
     local curr=${g_stages[$1]}
     local minutes=${g_stages[$(($1+1))]}
     local timestamp=$(cat $g_backupdir/$curr.stamp 2>/dev/null)
+    local retval=1
 
-    if [ "$timestamp" != "" ] &&
-       [ $((($(date +%s) - $timestamp) / 60)) -lt $minutes ]; then
-        return 1
+    if [ "$timestamp" == "" ]; then
+        echo $g_timestamp > $g_backupdir/$curr.stamp
+    elif [ $((($(date +%s) - $timestamp) / 60)) -ge $minutes ]; then
+        echo $g_timestamp > $g_backupdir/$curr.stamp
+        retval=0
     fi
 
-    return 0
+    return $retval
 }
 
 function createStage() {
@@ -47,7 +52,6 @@ function createStage() {
         rm -rf $g_backupdir/$curr.1
         mv $g_backupdir/$last $g_backupdir/$curr.1 2>/dev/null
     fi
-    echo $g_timestamp > $g_backupdir/$curr.stamp
 }
 
 function shiftStage() {
@@ -116,8 +120,6 @@ function shiftDefault() {
 }
 
 function main() {
-    g_timestamp=$(date +%s)
-
     local n=${#g_stages[*]}
 
     if [ $(($n % 3)) -ne 0 ]; then
