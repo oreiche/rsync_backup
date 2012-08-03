@@ -4,7 +4,7 @@ g_backupdir="/backup/"
 g_sourcedir="/"
 g_excludedirs=("dev" "mnt" "tmp")
 
-g_config=(
+g_stages=(
     #<name> <condition> <number-of-backups>
     "year"  "$(date +%j) == 001"  "3"
     "month" "$(date +%d) == 01"  "11"
@@ -12,9 +12,9 @@ g_config=(
     "day"   "true"                "6"
 )
 
-function createinc() {
-    local curr=${g_config[$1]}
-    local prev=${g_config[$(($1+3))]}
+function createStage() {
+    local curr=${g_stages[$1]}
+    local prev=${g_stages[$(($1+3))]}
     local last="$(ls $g_backupdir/ | grep $prev | sort -n -t '.' -k 2 | tail -n1)"
 
     if [ "$last" != "" ] && 
@@ -25,9 +25,9 @@ function createinc() {
     fi
 }
 
-function rotateinc() {
-    local curr=${g_config[$1]}
-    local i=${g_config[$(($1+2))]}
+function shiftStage() {
+    local curr=${g_stages[$1]}
+    local i=${g_stages[$(($1+2))]}
 
     echo "Shifting stage '$curr'."
 
@@ -38,8 +38,8 @@ function rotateinc() {
     done
 }
 
-function createinit() {
-    local curr=${g_config[$1]}
+function createDefault() {
+    local curr=${g_stages[$1]}
 
     echo "Creating new snapshot for default stage '$curr'."
 
@@ -76,9 +76,9 @@ function createinit() {
     rsync -a --delete $excluded $g_sourcedir/ $g_backupdir/$curr.0/
 }
 
-function rotateinit() {
-    local curr=${g_config[$1]}
-    local i=${g_config[$1+2]}
+function shiftDefault() {
+    local curr=${g_stages[$1]}
+    local i=${g_stages[$1+2]}
 
     echo "Shifting default stage '$curr'."
 
@@ -94,7 +94,7 @@ function rotateinit() {
 }
 
 function main() {
-    local n=${#g_config[*]}
+    local n=${#g_stages[*]}
 
     if [ $(($n % 3)) -ne 0 ] ||
        [ $n -lt 3 ]; then
@@ -103,16 +103,16 @@ function main() {
     else
         local i=0
         while [ $(($n-$i)) -ne 3 ]; do
-            if [ ${g_config[$(($i+1))]} ]; then
-                rotateinc $i
-                createinc $i
+            if [ ${g_stages[$(($i+1))]} ]; then
+                shiftStage $i
+                createStage $i
             fi
             i=$(($i+3))
         done
 
-        if [ ${g_config[$(($i+1))]} ]; then
-            rotateinit $i
-            createinit $i
+        if [ ${g_stages[$(($i+1))]} ]; then
+            shiftDefault $i
+            createDefault $i
         fi
     fi
 
