@@ -129,7 +129,8 @@ function shiftInit() {
     fi
 
     while [ $i -gt 1 ]; do
-        mv $conf_backupdir/$conf_name.$(($i-1)) $conf_backupdir/$conf_name.$i 2>/dev/null
+        mv $conf_backupdir/$conf_name.$(($i-1)) \
+            $conf_backupdir/$conf_name.$i 2>/dev/null
         i=$(($i-1))
     done
 }
