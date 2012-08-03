@@ -16,8 +16,15 @@ g_stages=(
 
 function createStage() {
     local curr=${g_stages[$1]}
-    local prev=${g_stages[$(($1+3))]}
-    local last="$(ls $g_backupdir/ | grep $prev | sort -n -t '.' -k 2 | tail -n1)"
+    local prev
+    local last
+
+    if [ $1 -ge 3 ]; then
+        prev=${g_stages[$(($1+3))]}
+    else
+        prev=$g_default
+    fi
+    last="$(ls $g_backupdir/ | grep $prev | sort -n -t '.' -k 2 | tail -n1)"
 
     if [ "$last" != "" ] && 
        [ "$last" != $prev.0 ]; then
