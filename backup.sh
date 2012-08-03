@@ -19,8 +19,9 @@ function createinc() {
 
     if [ "$last" != "" ] && 
        [ "$last" != $prev.0 ]; then
+        echo "Creating new snapshot for stage '$curr'."
         rm -rf $g_backupdir/$curr.1
-        mv $g_backupdir/$last $g_backupdir/$curr.1
+        mv $g_backupdir/$last $g_backupdir/$curr.1 2>/dev/null
     fi
 }
 
@@ -28,15 +29,19 @@ function rotateinc() {
     local curr=${g_config[$1]}
     local i=${g_config[$(($1+2))]}
 
+    echo "Shifting stage '$curr'."
+
     rm -rf $g_backupdir/$curr.$i
     while [ $i -gt 1 ]; do
-        mv $g_backupdir/$curr.$(($i-1)) $g_backupdir/$curr.$i
+        mv $g_backupdir/$curr.$(($i-1)) $g_backupdir/$curr.$i 2>/dev/null
         i=$(($i-1))
     done
 }
 
 function createinit() {
     local curr=${g_config[$1]}
+
+    echo "Creating new snapshot for default stage '$curr'."
 
     if [ -d $g_backupdir/$curr.tmp ]; then
         # Reuse the temp directory
@@ -65,13 +70,15 @@ function rotateinit() {
     local curr=${g_config[$1]}
     local i=${g_config[$1+2]}
 
+    echo "Shifting default stage '$curr'."
+
     if [ -d $g_backupdir/$curr.$i ]; then
         # Store as temp, this speeds up the whole operation
         mv $g_backupdir/$curr.$i $g_backupdir/$curr.tmp
     fi
 
     while [ $i -gt 1 ]; do
-        mv $g_backupdir/$curr.$(($i-1)) $g_backupdir/$curr.$i
+        mv $g_backupdir/$curr.$(($i-1)) $g_backupdir/$curr.$i 2>/dev/null
         i=$(($i-1))
     done
 }
