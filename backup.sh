@@ -94,7 +94,7 @@ function shiftDefault() {
     fi
 
     while [ $i -gt 1 ]; do
-        mv $g_backupdir/$g_default.$(($i-1)) $g_backupdir/$g_default.$i 1>/dev/null
+        mv $g_backupdir/$g_default.$(($i-1)) $g_backupdir/$g_default.$i 2>/dev/null
         i=$(($i-1))
     done
 }
