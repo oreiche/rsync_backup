@@ -137,7 +137,7 @@ function createInit() {
 
     local excluded
     local exclude=$(echo $conf_backuppath | grep $conf_sourcepath | \
-                    sed "s/^$(echo $conf_sourcepath | sed 's/\//\\\//g')\///g")
+                    sed "s/^$(echo $conf_sourcepath | sed 's/\//\\\//g')\/*//g")
     if [ "$exclude" != "" ]; then
         excluded="$excluded --exclude=$exclude"
     fi
