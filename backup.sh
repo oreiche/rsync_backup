@@ -41,15 +41,21 @@ g_timestamp=$(date +%s)
 ##
 function checkTimestamp() {
     local curr=${conf_stages[$1]}
-    local minutes=${conf_stages[$(($1+1))]}
+    local seconds=$((${conf_stages[$(($1+1))]} * 60))
     local timestamp=$(cat $conf_backuppath/$curr.stamp 2>/dev/null)
     local retval=1
 
-    if [ "$timestamp" == "" ]; then
+    if [ "$timestamp" != "" ]; then
+        local delta=$(($(date +%s) - $timestamp))
+        if [ $delta -ge $seconds ]; then
+            # Incrementing existing time stamp by $seconds*n (n >= 1)
+            echo $(($timestamp + ((($delta / $seconds) + 1) * $seconds))) \
+                > $conf_backuppath/$curr.stamp
+            retval=0
+        fi
+    else
+        # Creating initial time stamp
         echo $g_timestamp > $conf_backuppath/$curr.stamp
-    elif [ $((($(date +%s) - $timestamp) / 60)) -ge $minutes ]; then
-        echo $g_timestamp > $conf_backuppath/$curr.stamp
-        retval=0
     fi
 
     return $retval
