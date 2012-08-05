@@ -11,15 +11,10 @@ conf_backuppath="/backup"
 # Exclude paths from backup (relative to source path)
 conf_excludepaths=("dev" "mnt" "tmp")
 
-# Name of the snapshots to create (containing incremental backups)
-conf_name="day"
-
-# Number of snapshots to create
-conf_snapshots="6"
-
-# Further stages for storing older snapshots (ascending interval length)
+# Stages for storing snapshots (ascending interval length)
 conf_stages=(
-    #NAME      MINUTES  SNAPSHOTS
+    #NAME      MINUTES  COUNT
+    "day"        "1440" "6"
     "week"      "10080" "3"
     "month"     "40320" "2"
     "quarter"  "120960" "1"
@@ -70,16 +65,9 @@ function checkTimestamp() {
 ##
 function createStage() {
     local curr=${conf_stages[$1]}
-    local prev
-    local last
-
-    if [ $1 -ge 3 ]; then
-        prev=${conf_stages[$(($1-3))]}
-    else
-        prev=$conf_name
-    fi
-    last="$(ls $conf_backuppath/ | grep $prev\.[[:digit:]] | \
-            sort -n -t '.' -k 2 | tail -n1)"
+    local prev=${conf_stages[$(($1-3))]}
+    local last="$(ls $conf_backuppath/ | grep $prev\.[[:digit:]] | \
+                  sort -n -t '.' -k 2 | tail -n1)"
 
     if [ "$last" != "" ] && 
        [ "$last" != $prev.0 ]; then
@@ -114,30 +102,32 @@ function shiftStage() {
 ################################################################################
 
 ##
-## @brief Creates a new snapshot for initial stage (@see conf_name). A previous
-##        shifting process might has reserved a temp directory which will be
-##        used to speed up the creation process.
+## @brief Creates a new snapshot for initial stage. A previous shifting process
+##        might has reserved a temp directory which will be used to speed up the
+##        creation process.
 ##
 function createInit() {
-    echo "Creating new snapshot for initial stage '$conf_name'."
+    local init=${conf_stages[0]}
 
-    if [ -d $conf_backuppath/$conf_name.tmp ]; then
+    echo "Creating new snapshot for initial stage '$init'."
+
+    if [ -d $conf_backuppath/$init.tmp ]; then
         # Reuse the temp directory
-        mv $conf_backuppath/$conf_name.0 $conf_backuppath/$conf_name.1
-        mv $conf_backuppath/$conf_name.tmp $conf_backuppath/$conf_name.0
+        mv $conf_backuppath/$init.0 $conf_backuppath/$init.1
+        mv $conf_backuppath/$init.tmp $conf_backuppath/$init.0
         if [[ $OSTYPE == *darwin* ]]; then
-            cd $conf_backuppath/$conf_name.1
-            find . -print | cpio -pdlm $conf_backuppath/$conf_name.0 2>/dev/null
+            cd $conf_backuppath/$init.1
+            find . -print | cpio -pdlm $conf_backuppath/$init.0 2>/dev/null
         else
-            cp -al $conf_backuppath/$conf_name.1/. $conf_backuppath/$conf_name.0
+            cp -al $conf_backuppath/$init.1/. $conf_backuppath/$init.0
         fi
-    elif [ -d $conf_backuppath/$conf_name.0 ]; then
-        rm -rf $conf_backuppath/$conf_name.1
+    elif [ -d $conf_backuppath/$init.0 ]; then
+        rm -rf $conf_backuppath/$init.1
         if [[ $OSTYPE == *darwin* ]]; then
-            cd $conf_backuppath/$conf_name.0
-            find . -print | cpio -pdlm $conf_backuppath/$conf_name.1 2>/dev/null
+            cd $conf_backuppath/$init.0
+            find . -print | cpio -pdlm $conf_backuppath/$init.1 2>/dev/null
         else
-            cp -al $conf_backuppath/$conf_name.0 $conf_backuppath/$conf_name.1
+            cp -al $conf_backuppath/$init.0 $conf_backuppath/$init.1
         fi
     fi
 
@@ -151,30 +141,31 @@ function createInit() {
         excluded="$excluded --exclude=$exclude"
     done
 
-    rsync -a --delete $excluded $conf_sourcepath/ $conf_backuppath/$conf_name.0/
+    rsync -a --delete $excluded $conf_sourcepath/ $conf_backuppath/$init.0/
 }
 
 ################################################################################
 
 ##
-## @brief Shifts all snapshots of the initial stage (@see conf_name). The oldest
-##        snapshot might be stored in temp directory to be used by the
-##        consecutive create function.
+## @brief Shifts all snapshots of the initial stage. The oldest snapshot might
+##        be stored in temp directory to be used by the consecutive create
+##        function.
 ##
 function shiftInit() {
-    if [ -d $conf_backuppath/$conf_name.0 ]; then
-        local i=$conf_snapshots
+    local curr=${conf_stages[0]}
+    local i=${conf_stages[2]}
 
-        echo "Shifting snapshots of initial stage '$conf_name'."
+    if [ -d $conf_backuppath/$init.0 ]; then
+        echo "Shifting snapshots of initial stage '$init'."
 
-        if [ -d $conf_backuppath/$conf_name.$i ]; then
+        if [ -d $conf_backuppath/$init.$i ]; then
             # Store as temp, this speeds up the whole operation
-            mv $conf_backuppath/$conf_name.$i $conf_backuppath/$conf_name.tmp
+            mv $conf_backuppath/$init.$i $conf_backuppath/$init.tmp
         fi
 
         while [ $i -gt 1 ]; do
-            mv $conf_backuppath/$conf_name.$(($i-1)) \
-                $conf_backuppath/$conf_name.$i 2>/dev/null
+            mv $conf_backuppath/$init.$(($i-1)) \
+                $conf_backuppath/$init.$i 2>/dev/null
             i=$(($i-1))
         done
     fi
@@ -193,7 +184,8 @@ function main() {
     local n=${#conf_stages[*]}
     local retval=1
 
-    if [ $(($n % 3)) -ne 0 ]; then
+    if [ $n -lt 3 ] ||
+       [ $(($n % 3)) -ne 0 ]; then
         echo "Configuration error: Malformed stages array."
     elif [ ! -d $conf_sourcepath ]; then
         echo "Directory '$conf_sourcepath' does not exist."
@@ -203,7 +195,7 @@ function main() {
         echo "Starting backup of '$conf_sourcepath'."
 
         local i=$(($n - 3))
-        while [ $i -ge 0 ]; do
+        while [ $i -ge 3 ]; do
             checkTimestamp $i
             if [ "$?" == "0" ]; then
                 shiftStage $i
@@ -212,8 +204,11 @@ function main() {
             i=$(($i-3))
         done
 
-        shiftInit
-        createInit
+        checkTimestamp 0
+        if [ "$?" == "0" ]; then
+            shiftInit
+            createInit
+        fi
 
         echo "Finished backup process."
         retval=0
