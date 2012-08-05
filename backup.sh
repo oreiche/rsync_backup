@@ -44,7 +44,7 @@ function checkTimestamp() {
         local delta=$(($(date +%s) - $timestamp))
         if [ $delta -ge $seconds ]; then
             # Incrementing existing time stamp by $seconds*n (n >= 1)
-            echo $(($timestamp + ((($delta / $seconds) + 1) * $seconds))) \
+            echo $(($timestamp + (($delta / $seconds) * $seconds))) \
                 > $conf_backuppath/$curr.stamp
             retval=0
         fi
