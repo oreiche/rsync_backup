@@ -152,7 +152,7 @@ function createInit() {
 ##        function.
 ##
 function shiftInit() {
-    local curr=${conf_stages[0]}
+    local init=${conf_stages[0]}
     local i=${conf_stages[2]}
 
     if [ -d $conf_backuppath/$init.0 ]; then
