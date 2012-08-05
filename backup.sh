@@ -29,9 +29,9 @@ g_timestamp=$(date +%s)
 
 ##
 ## @brief Checks whether time stamp of stage is exceeded. Creates new time stamp
-##        for current stage if time stamp was exceeded or didn't exist.
+##        if it doesn't already exist or updates an existing time stamp.
 ## @param  {Number} $1  Index of the stage in stages array.
-## @retval {String} "0" Time stamp was exceeded.
+## @retval {String} "0" Time stamp was exceeded or didn't exist.
 ## @retval {String} "1" Time stamp was not exceeded.
 ##
 function checkTimestamp() {
@@ -51,6 +51,7 @@ function checkTimestamp() {
     else
         # Creating initial time stamp
         echo $g_timestamp > $conf_backuppath/$curr.stamp
+        retval=0
     fi
 
     return $retval
