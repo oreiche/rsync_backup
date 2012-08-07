@@ -67,7 +67,7 @@ function checkTimestamp() {
 function createStage() {
     local curr=${conf_stages[$1]}
     local prev=${conf_stages[$(($1-3))]}
-    local last="$(ls $conf_backuppath/ | grep $prev\.[[:digit:]] | \
+    local last="$(ls $conf_backuppath/ | grep $prev\.[[:digit:]]*$ | \
                   sort -n -t '.' -k 2 | tail -n1)"
 
     if [ "$last" != "" ] && 
