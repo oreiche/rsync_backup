@@ -27,9 +27,30 @@ conf_stages=(
 ## Time stamp of initial script execution (@see checkTimestamp())
 g_timestamp=$(date +%s)
 
+################################################################################
+
+##
+## @brief Resets an existing time stamp.
+## @param {Number} $1 Index of the stage in stages array.
+##
+function resetTimestamp() {
+    local curr=${conf_stages[$1]}
+    local seconds=$((${conf_stages[$(($1+1))]} * 60))
+    local timestamp=$(cat $conf_backuppath/$curr.stamp 2>/dev/null)
+
+    if [ "$timestamp" != "" ]; then
+        local delta=$(($(date +%s) - $timestamp))
+        # Incrementing existing time stamp by $seconds*n (n >= 1)
+        echo $(($timestamp + (($delta / $seconds) * $seconds))) \
+            > $conf_backuppath/$curr.stamp
+    fi
+}
+
+################################################################################
+
 ##
 ## @brief Checks whether time stamp of stage is exceeded. Creates new time stamp
-##        if it doesn't already exist or updates an existing time stamp.
+##        if it doesn't already exist or resets an existing time stamp.
 ## @param  {Number} $1  Index of the stage in stages array.
 ## @retval {String} "0" Time stamp was exceeded or didn't exist.
 ## @retval {String} "1" Time stamp was not exceeded.
@@ -43,9 +64,7 @@ function checkTimestamp() {
     if [ "$timestamp" != "" ]; then
         local delta=$(($(date +%s) - $timestamp))
         if [ $delta -ge $seconds ]; then
-            # Incrementing existing time stamp by $seconds*n (n >= 1)
-            echo $(($timestamp + (($delta / $seconds) * $seconds))) \
-                > $conf_backuppath/$curr.stamp
+            resetTimestamp $1
             retval=0
         fi
     else
@@ -106,6 +125,7 @@ function shiftStage() {
 ## @brief Creates a new snapshot for initial stage. A previous shifting process
 ##        might has reserved a temp directory which will be used to speed up the
 ##        creation process.
+## @returns Return value of rsync process call.
 ##
 function createInit() {
     local init=${conf_stages[0]}
@@ -114,21 +134,15 @@ function createInit() {
 
     if [ -d $conf_backuppath/$init.tmp ]; then
         # Reuse the temp directory
-        mv $conf_backuppath/$init.0 $conf_backuppath/$init.1
         mv $conf_backuppath/$init.tmp $conf_backuppath/$init.0
+    fi
+
+    if [ -d $conf_backuppath/$init.1 ]; then
         if [[ $OSTYPE == *darwin* ]]; then
             cd $conf_backuppath/$init.1
             find . -print | cpio -pdlm $conf_backuppath/$init.0 2>/dev/null
         else
             cp -al $conf_backuppath/$init.1/. $conf_backuppath/$init.0
-        fi
-    elif [ -d $conf_backuppath/$init.0 ]; then
-        rm -rf $conf_backuppath/$init.1
-        if [[ $OSTYPE == *darwin* ]]; then
-            cd $conf_backuppath/$init.0
-            find . -print | cpio -pdlm $conf_backuppath/$init.1 2>/dev/null
-        else
-            cp -al $conf_backuppath/$init.0 $conf_backuppath/$init.1
         fi
     fi
 
@@ -143,6 +157,8 @@ function createInit() {
     done
 
     rsync -a --delete $excluded $conf_sourcepath/ $conf_backuppath/$init.0/
+
+    return $?
 }
 
 ################################################################################
@@ -164,7 +180,7 @@ function shiftInit() {
             mv $conf_backuppath/$init.$i $conf_backuppath/$init.tmp
         fi
 
-        while [ $i -gt 1 ]; do
+        while [ $i -gt 0 ]; do
             mv $conf_backuppath/$init.$(($i-1)) \
                 $conf_backuppath/$init.$i 2>/dev/null
             i=$(($i-1))
@@ -195,24 +211,39 @@ function main() {
     else
         echo "Starting backup of '$conf_sourcepath'."
 
-        local i=$(($n - 3))
-        while [ $i -ge 3 ]; do
-            checkTimestamp $i
-            if [ "$?" == "0" ]; then
-                shiftStage $i
-                createStage $i
-            fi
-            i=$(($i-3))
-        done
+        if [ ! -f $conf_backuppath/inprogress.stamp ]; then
+            echo $g_timestamp > $conf_backuppath/inprogress.stamp
 
-        checkTimestamp 0
-        if [ "$?" == "0" ]; then
-            shiftInit
+            local i=$(($n - 3))
+            while [ $i -ge 3 ]; do
+                checkTimestamp $i
+                if [ "$?" == "0" ]; then
+                    shiftStage $i
+                    createStage $i
+                fi
+                i=$(($i-3))
+            done
+
+            checkTimestamp 0
+            if [ "$?" == "0" ]; then
+                shiftInit
+                createInit
+                retval=$?
+            else
+                retval=0
+            fi
+        else
+            echo "Recovering interrupted snapshot for initial stage."
+            resetTimestamp 0
             createInit
+            retval=$?
+        fi
+
+        if [ "$retval" == "0" ]; then
+            rm -f $conf_backuppath/inprogress.stamp
         fi
 
         echo "Finished backup process."
-        retval=0
     fi
 
     echo
