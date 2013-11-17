@@ -36,13 +36,13 @@ g_timestamp=$(date +%s)
 function resetTimestamp() {
     local curr=${conf_stages[$1]}
     local seconds=$((${conf_stages[$(($1+1))]} * 60))
-    local timestamp=$(cat $conf_backuppath/$curr.stamp 2>/dev/null)
+    local timestamp=$(cat "$conf_backuppath"/$curr.stamp 2>/dev/null)
 
     if [ "$timestamp" != "" ]; then
         local delta=$(($(date +%s) - $timestamp))
         # Incrementing existing time stamp by $seconds*n (n >= 1)
         echo $(($timestamp + (($delta / $seconds) * $seconds))) \
-            > $conf_backuppath/$curr.stamp
+            > "$conf_backuppath"/$curr.stamp
     fi
 }
 
@@ -58,7 +58,7 @@ function resetTimestamp() {
 function checkTimestamp() {
     local curr=${conf_stages[$1]}
     local seconds=$((${conf_stages[$(($1+1))]} * 60))
-    local timestamp=$(cat $conf_backuppath/$curr.stamp 2>/dev/null)
+    local timestamp=$(cat "$conf_backuppath"/$curr.stamp 2>/dev/null)
     local retval=1
 
     if [ "$timestamp" != "" ]; then
@@ -69,7 +69,7 @@ function checkTimestamp() {
         fi
     else
         # Creating initial time stamp
-        echo $g_timestamp > $conf_backuppath/$curr.stamp
+        echo $g_timestamp > "$conf_backuppath"/$curr.stamp
         retval=0
     fi
 
@@ -86,14 +86,14 @@ function checkTimestamp() {
 function createStage() {
     local curr=${conf_stages[$1]}
     local prev=${conf_stages[$(($1-3))]}
-    local last="$(ls $conf_backuppath/ | grep $prev\.[[:digit:]]*$ | \
+    local last="$(ls "$conf_backuppath/" | grep $prev\.[[:digit:]]*$ | \
                   sort -n -t '.' -k 2 | tail -n1)"
 
     if [ "$last" != "" ] && 
        [ "$last" != $prev.0 ]; then
         echo "Creating new snapshot for stage '$curr'."
-        rm -rf $conf_backuppath/$curr.1
-        mv $conf_backuppath/$last $conf_backuppath/$curr.1 2>/dev/null
+        rm -rf "$conf_backuppath"/$curr.1
+        mv "$conf_backuppath"/$last "$conf_backuppath"/$curr.1 2>/dev/null
     fi
 }
 
@@ -108,12 +108,12 @@ function shiftStage() {
     local curr=${conf_stages[$1]}
     local i=${conf_stages[$(($1+2))]}
 
-    if [ -d $conf_backuppath/$curr.1 ]; then
+    if [ -d "$conf_backuppath"/$curr.1 ]; then
         echo "Shifting snapshots of stage '$curr'."
-        rm -rf $conf_backuppath/$curr.$i
+        rm -rf "$conf_backuppath"/$curr.$i
         while [ $i -gt 1 ]; do
-            mv $conf_backuppath/$curr.$(($i-1)) \
-                $conf_backuppath/$curr.$i 2>/dev/null
+            mv "$conf_backuppath"/$curr.$(($i-1)) \
+               "$conf_backuppath"/$curr.$i 2>/dev/null
             i=$(($i-1))
         done
     fi
@@ -132,23 +132,24 @@ function createInit() {
 
     echo "Creating new snapshot for initial stage '$init'."
 
-    if [ -d $conf_backuppath/$init.tmp ]; then
+    if [ -d "$conf_backuppath"/$init.tmp ]; then
         # Reuse the temp directory
-        mv $conf_backuppath/$init.tmp $conf_backuppath/$init.0
+        mv "$conf_backuppath"/$init.tmp "$conf_backuppath"/$init.0
     fi
 
-    if [ -d $conf_backuppath/$init.1 ]; then
+    if [ -d "$conf_backuppath"/$init.1 ]; then
         if [[ $OSTYPE == *darwin* ]]; then
-            cd $conf_backuppath/$init.1
-            find . -print | cpio -pdlm $conf_backuppath/$init.0 2>/dev/null
+            cd "$conf_backuppath"/$init.1
+            find . -print | cpio -pdlm "$conf_backuppath"/$init.0 2>/dev/null
         else
-            cp -al $conf_backuppath/$init.1/. $conf_backuppath/$init.0
+            cp -al "$conf_backuppath"/$init.1/. "$conf_backuppath"/$init.0
         fi
     fi
 
     local excluded
-    local exclude=$(echo $conf_backuppath | grep $conf_sourcepath | \
-                    sed "s/^$(echo $conf_sourcepath | sed 's/\//\\\//g')\/*//g")
+    local exclude=$(echo "$conf_backuppath" | grep "$conf_sourcepath" | \
+                    sed "s/^$(echo "$conf_sourcepath" | \
+                    sed 's/\//\\\//g')\/*//g")
     if [ "$exclude" != "" ]; then
         excluded="$excluded --exclude=$exclude"
     fi
@@ -156,7 +157,7 @@ function createInit() {
         excluded="$excluded --exclude=$exclude"
     done
 
-    rsync -a --delete $excluded $conf_sourcepath/ $conf_backuppath/$init.0/
+    rsync -a --delete $excluded "$conf_sourcepath"/ "$conf_backuppath"/$init.0/
 
     return $?
 }
@@ -172,17 +173,17 @@ function shiftInit() {
     local init=${conf_stages[0]}
     local i=${conf_stages[2]}
 
-    if [ -d $conf_backuppath/$init.0 ]; then
+    if [ -d "$conf_backuppath"/$init.0 ]; then
         echo "Shifting snapshots of initial stage '$init'."
 
-        if [ -d $conf_backuppath/$init.$i ]; then
+        if [ -d "$conf_backuppath"/$init.$i ]; then
             # Store as temp, this speeds up the whole operation
-            mv $conf_backuppath/$init.$i $conf_backuppath/$init.tmp
+            mv "$conf_backuppath"/$init.$i "$conf_backuppath"/$init.tmp
         fi
 
         while [ $i -gt 0 ]; do
-            mv $conf_backuppath/$init.$(($i-1)) \
-                $conf_backuppath/$init.$i 2>/dev/null
+            mv "$conf_backuppath"/$init.$(($i-1)) \
+               "$conf_backuppath"/$init.$i 2>/dev/null
             i=$(($i-1))
         done
     fi
@@ -204,15 +205,15 @@ function main() {
     if [ $n -lt 3 ] ||
        [ $(($n % 3)) -ne 0 ]; then
         echo "Configuration error: Malformed stages array."
-    elif [ ! -d $conf_sourcepath ]; then
+    elif [ ! -d "$conf_sourcepath" ]; then
         echo "Directory '$conf_sourcepath' does not exist."
-    elif [ ! -d $conf_backuppath ]; then
+    elif [ ! -d "$conf_backuppath" ]; then
         echo "Directory '$conf_backuppath' does not exist."
     else
         echo "Starting backup of '$conf_sourcepath'."
 
-        if [ ! -f $conf_backuppath/inprogress.stamp ]; then
-            echo $g_timestamp > $conf_backuppath/inprogress.stamp
+        if [ ! -f "$conf_backuppath"/inprogress.stamp ]; then
+            echo $g_timestamp > "$conf_backuppath"/inprogress.stamp
 
             local i=$(($n - 3))
             while [ $i -ge 3 ]; do
@@ -240,7 +241,7 @@ function main() {
         fi
 
         if [ "$retval" == "0" ]; then
-            rm -f $conf_backuppath/inprogress.stamp
+            rm -f "$conf_backuppath"/inprogress.stamp
         fi
 
         echo "Finished backup process."
