@@ -140,7 +140,7 @@ function createInit() {
     local excluded=
     local exclude=$(echo "$conf_backuppath" | grep "$conf_sourcepath" | \
                     sed "s/^$(echo "$conf_sourcepath" | \
-                    sed 's/\//\\\//g')\/*//g")
+                        sed 's/\//\\\//g')\/*//g")
     if [ "$exclude" != "" ]; then
         excluded="$excluded --exclude=\"$exclude\""
     fi
@@ -148,14 +148,16 @@ function createInit() {
         excluded="$excluded --exclude=\"$exclude\""
     done
 
-    # Test for cross-device and let rsync create hard links instead
+    # Test for non-cross-device and let rsync create hard links instead
     touch "$conf_sourcepath"/.cross-device_link_test
     mkhardlink=""
     if [[ $OSTYPE == *darwin* ]]; then
         cd "$conf_sourcepath"/
-        find .cross-device_link_test -print | cpio -pdlm "$conf_backuppath"/.cross-device_link_test 2>/dev/null
+        find .cross-device_link_test -print | \
+            cpio -pdlm "$conf_backuppath"/.cross-device_link_test 2>/dev/null
     else
-        cp -al "$conf_sourcepath"/.cross-device_link_test "$conf_backuppath"/.cross-device_link_test 2>/dev/null
+        cp -al "$conf_sourcepath"/.cross-device_link_test \
+            "$conf_backuppath"/.cross-device_link_test 2>/dev/null
     fi
     if [ "$?" == "0" ]; then
       mkhardlink="--link-dest=\"$conf_sourcepath\""
@@ -163,7 +165,11 @@ function createInit() {
     rm -f "$conf_sourcepath"/.cross-device_link_test
     rm -f "$conf_backuppath"/.cross-device_link_test
 
-    cmd='rsync -a '$mkhardlink' --delete '$excluded' "'$conf_sourcepath'"/ "'$conf_backuppath'"/'$init'.0/'
+    cmd='rsync -a --delete'
+    cmd=$cmd' '$mkhardlink
+    cmd=$cmd' '$excluded
+    cmd=$cmd' "'$conf_sourcepath'"/'
+    cmd=$cmd' "'$conf_backuppath'"/'$init'.0/'
     eval $cmd
 
     return $?
