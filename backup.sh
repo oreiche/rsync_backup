@@ -146,18 +146,19 @@ function createInit() {
         fi
     fi
 
-    local excluded
+    local excluded=
     local exclude=$(echo "$conf_backuppath" | grep "$conf_sourcepath" | \
                     sed "s/^$(echo "$conf_sourcepath" | \
                     sed 's/\//\\\//g')\/*//g")
     if [ "$exclude" != "" ]; then
-        excluded="$excluded --exclude=$exclude"
+        excluded="$excluded --exclude=\"$exclude\""
     fi
     for exclude in "${conf_excludepaths[@]}"; do
-        excluded="$excluded --exclude=$exclude"
+        excluded="$excluded --exclude=\"$exclude\""
     done
 
-    rsync -a --delete $excluded "$conf_sourcepath"/ "$conf_backuppath"/$init.0/
+    cmd='rsync -a --delete '$excluded' "'$conf_sourcepath'"/ "'$conf_backuppath'"/'$init'.0/'
+    eval $cmd
 
     return $?
 }
