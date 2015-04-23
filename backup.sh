@@ -202,6 +202,20 @@ function main() {
     local n=${#conf_stages[*]}
     local retval=1
 
+    # Parse command line arguments
+    if [ $1 ]; then
+      if [ $2 ]; then
+        conf_sourcepath="$1"
+        shift
+        conf_backuppath="$1"
+        shift
+        conf_excludepaths=("$@")
+      else
+        echo "Usage:"
+        echo "  $0 <sourcepath> <backuppath> [<excludepath> ...]"
+      fi
+    fi
+
     if [ $n -lt 3 ] ||
        [ $(($n % 3)) -ne 0 ]; then
         echo "Configuration error: Malformed stages array."
@@ -252,7 +266,7 @@ function main() {
     return $retval
 }
 
-main
+main "$@"
 exit $?
 
 ################################################################################
