@@ -2,15 +2,6 @@
 #
 # (c) 2015, Oliver Reiche <oliver.reiche@gmail.com>
 
-# Source path to backup
-conf_sourcepath="/"
-
-# Destination path for storing the backup
-conf_backuppath="/backup"
-
-# Exclude paths from backup (relative to source path)
-conf_excludepaths=("dev" "mnt" "tmp")
-
 # Stages for storing snapshots (ascending interval length)
 conf_stages=(
     #NAME      MINUTES  COUNT
@@ -218,66 +209,66 @@ function main() {
     local n=${#conf_stages[*]}
     local retval=1
 
-    # Parse command line arguments
-    if [ $1 ]; then
-      if [ $2 ]; then
+    if [ $1 ] && [ $2 ]; then
+        # Parse command line arguments
         conf_sourcepath="$1"
         shift
         conf_backuppath="$1"
         shift
         conf_excludepaths=("$@")
-      else
-        echo "Usage:"
-        echo "  $0 <sourcepath> <backuppath> [<excludepath> ...]"
-      fi
-    fi
 
-    if [ $n -lt 3 ] ||
-       [ $(($n % 3)) -ne 0 ]; then
-        echo "Configuration error: Malformed stages array."
-    elif [ ! -d "$conf_sourcepath" ]; then
-        echo "Directory '$conf_sourcepath' does not exist."
-    elif [ ! -d "$conf_backuppath" ]; then
-        echo "Directory '$conf_backuppath' does not exist."
-    else
-        echo "Starting backup of '$conf_sourcepath'."
+        if [ $n -lt 3 ] ||
+           [ $(($n % 3)) -ne 0 ]; then
+            echo "Configuration error: Malformed stages array."
+        elif [ ! -d "$conf_sourcepath" ]; then
+            echo "Directory '$conf_sourcepath' does not exist."
+        elif [ ! -d "$conf_backuppath" ]; then
+            echo "Directory '$conf_backuppath' does not exist."
+        else
+            echo "Starting backup of '$conf_sourcepath'."
 
-        if [ ! -f "$conf_backuppath"/inprogress.stamp ]; then
-            echo $g_timestamp > "$conf_backuppath"/inprogress.stamp
+            if [ ! -f "$conf_backuppath"/inprogress.stamp ]; then
+                echo $g_timestamp > "$conf_backuppath"/inprogress.stamp
 
-            local i=$(($n - 3))
-            while [ $i -ge 3 ]; do
-                checkTimestamp $i
+                local i=$(($n - 3))
+                while [ $i -ge 3 ]; do
+                    checkTimestamp $i
+                    if [ "$?" == "0" ]; then
+                        shiftStage $i
+                        createStage $i
+                    fi
+                    i=$(($i-3))
+                done
+
+                checkTimestamp 0
                 if [ "$?" == "0" ]; then
-                    shiftStage $i
-                    createStage $i
+                    shiftInit
+                    createInit
+                    retval=$?
+                else
+                    retval=0
                 fi
-                i=$(($i-3))
-            done
-
-            checkTimestamp 0
-            if [ "$?" == "0" ]; then
-                shiftInit
+            else
+                echo "Recovering interrupted snapshot for initial stage."
+                resetTimestamp 0
                 createInit
                 retval=$?
-            else
-                retval=0
             fi
-        else
-            echo "Recovering interrupted snapshot for initial stage."
-            resetTimestamp 0
-            createInit
-            retval=$?
-        fi
 
-        if [ "$retval" == "0" ]; then
-            rm -f "$conf_backuppath"/inprogress.stamp
-        fi
+            if [ "$retval" == "0" ]; then
+                rm -f "$conf_backuppath"/inprogress.stamp
+            fi
 
-        echo "Finished backup process."
+            echo "Finished backup process."
+        fi
+    else
+        echo "Usage:"
+        echo "  $0 <sourcepath> <backuppath> [excludepath1 excludepath2 ...]"
+        echo
+        echo "Example: Backup '/' to '/backup' without '/dev' '/mnt' '/tmp'"
+        echo "  $0 / /backup dev mnt tmp"
+        retval=0
     fi
-
-    echo
 
     return $retval
 }
