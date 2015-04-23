@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# (C) Oliver Reiche <oliver.reiche@siemens.com>
+# (c) 2015, Oliver Reiche <oliver.reiche@gmail.com>
 
 # Source path to backup
 conf_sourcepath="/"
