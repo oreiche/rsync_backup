@@ -27,13 +27,13 @@ g_timestamp=$(date +%s)
 function resetTimestamp() {
     local curr=${conf_stages[$1]}
     local seconds=$((${conf_stages[$(($1+1))]} * 60))
-    local timestamp=$(cat "$conf_backuppath"/$curr.stamp 2>/dev/null)
+    local timestamp=$(cat "$conf_backuppath"/.$curr.stamp 2>/dev/null)
 
     if [ "$timestamp" != "" ]; then
         local delta=$(($(date +%s) - $timestamp))
         # Incrementing existing time stamp by $seconds*n (n >= 1)
         echo $(($timestamp + (($delta / $seconds) * $seconds))) \
-            > "$conf_backuppath"/$curr.stamp
+            > "$conf_backuppath"/.$curr.stamp
     fi
 }
 
@@ -49,7 +49,7 @@ function resetTimestamp() {
 function checkTimestamp() {
     local curr=${conf_stages[$1]}
     local seconds=$((${conf_stages[$(($1+1))]} * 60))
-    local timestamp=$(cat "$conf_backuppath"/$curr.stamp 2>/dev/null)
+    local timestamp=$(cat "$conf_backuppath"/.$curr.stamp 2>/dev/null)
     local retval=1
 
     if [ "$timestamp" != "" ]; then
@@ -60,7 +60,7 @@ function checkTimestamp() {
         fi
     else
         # Creating initial time stamp
-        echo $g_timestamp > "$conf_backuppath"/$curr.stamp
+        echo $g_timestamp > "$conf_backuppath"/.$curr.stamp
         retval=0
     fi
 
@@ -77,7 +77,7 @@ function checkTimestamp() {
 function createStage() {
     local curr=${conf_stages[$1]}
     local prev=${conf_stages[$(($1-3))]}
-    local last="$(ls "$conf_backuppath/" | grep $prev\.[[:digit:]]*$ | \
+    local last="$(ls "$conf_backuppath"/ | grep $prev\.[[:digit:]]*$ | \
                   sort -n -t '.' -k 2 | tail -n1)"
 
     if [ "$last" != "" ] && 
@@ -233,8 +233,8 @@ function main() {
         else
             echo "Starting backup of '$conf_sourcepath'."
 
-            if [ ! -f "$conf_backuppath"/inprogress.stamp ]; then
-                echo $g_timestamp > "$conf_backuppath"/inprogress.stamp
+            if [ ! -f "$conf_backuppath"/.inprogress.stamp ]; then
+                echo $g_timestamp > "$conf_backuppath"/.inprogress.stamp
 
                 local i=$(($n - 3))
                 while [ $i -ge 3 ]; do
@@ -262,7 +262,7 @@ function main() {
             fi
 
             if [ "$retval" == "0" ]; then
-                rm -f "$conf_backuppath"/inprogress.stamp
+                rm -f "$conf_backuppath"/.inprogress.stamp
             fi
 
             echo "Finished backup process."
