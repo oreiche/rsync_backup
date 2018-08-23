@@ -139,7 +139,7 @@ function createInit() {
             cd "$conf_backuppath"/$init.1
             find . -print | cpio -pdlm "$conf_backuppath"/$init.0 2>/dev/null
         else
-            cp -al "$conf_backuppath"/$init.1/. "$conf_backuppath"/$init.0
+            cp -alu "$conf_backuppath"/$init.1/. "$conf_backuppath"/$init.0
         fi
     fi
 
@@ -162,7 +162,7 @@ function createInit() {
         find .cross-device_link_test -print | \
             cpio -pdlm "$conf_backuppath"/.cross-device_link_test 2>/dev/null
     else
-        cp -al "$conf_sourcepath"/.cross-device_link_test \
+        cp -alu "$conf_sourcepath"/.cross-device_link_test \
             "$conf_backuppath"/.cross-device_link_test 2>/dev/null
     fi
     if [ "$?" == "0" ]; then
