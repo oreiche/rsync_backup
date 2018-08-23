@@ -4,13 +4,13 @@
 
 # Stages for storing snapshots (ascending interval length)
 conf_stages=(
-    #NAME      MINUTES  COUNT
-    "day"        "1440" "6"
-    "week"      "10080" "3"
-    "month"     "40320" "2"
-    "quarter"  "120960" "1"
-    "halfyear" "241920" "1"
-    "year"     "483840" "3"
+    #NAME       MINUTES  COUNT
+    "day"        "1440"    "6"
+    "week"      "10080"    "3"
+    "month"     "40320"    "2"
+    "quarter"  "120960"    "1"
+    "halfyear" "241920"    "1"
+    "year"     "483840"    "3"
 )
 
 ################################################################################
