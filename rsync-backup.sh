@@ -30,9 +30,8 @@ function resetTimestamp() {
     local timestamp=$(cat "$conf_backuppath"/.$curr.stamp 2>/dev/null)
 
     if [ "$timestamp" != "" ]; then
-        local delta=$(($(date +%s) - $timestamp))
-        # Incrementing existing time stamp by $seconds*n (n >= 1)
-        echo $(($timestamp + (($delta / $seconds) * $seconds))) \
+        # Floor new time stamp to multiple of $seconds
+        echo $(($g_timestamp / $seconds * $seconds)) \
             > "$conf_backuppath"/.$curr.stamp
     fi
 }
