@@ -261,6 +261,7 @@ function main() {
                 fi
             else
                 echo "Recovering interrupted snapshot for initial stage."
+                rm -rf "$conf_backuppath"/*.del &
                 resetTimestamp 0
                 createInit
                 retval=$?
