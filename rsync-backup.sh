@@ -180,7 +180,12 @@ function createInit() {
     echo "  Running rsync to create the actual backup."
     eval $cmd
 
-    return $?
+    local retval=$?
+    if [ "$retval" != "0" ]; then
+        echo "  WARNING: rysnc returned exit code '$retval'."
+    fi
+
+    return $retval
 }
 
 ################################################################################
@@ -270,10 +275,7 @@ function main() {
                 retval=$?
             fi
 
-            if [ "$retval" == "0" ]; then
-                rm -f "$conf_backuppath"/.inprogress.stamp
-            fi
-
+            rm -f "$conf_backuppath"/.inprogress.stamp
             echo "Finished backup process."
         fi
     else
