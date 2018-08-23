@@ -134,6 +134,7 @@ function createInit() {
     fi
 
     if [ -d "$conf_backuppath"/$init.1 ]; then
+        echo "  Creating hard copy from previous backup."
         if [[ $OSTYPE == *darwin* ]]; then
             cd "$conf_backuppath"/$init.1
             find . -print | cpio -pdlm "$conf_backuppath"/$init.0 2>/dev/null
@@ -175,6 +176,8 @@ function createInit() {
     cmd=$cmd' '$excluded
     cmd=$cmd' "'$conf_sourcepath'"/'
     cmd=$cmd' "'$conf_backuppath'"/'$init'.0/'
+
+    echo "  Running rsync to create the actual backup."
     eval $cmd
 
     return $?
@@ -236,7 +239,7 @@ function main() {
         elif [ ! -d "$conf_backuppath" ]; then
             echo "Directory '$conf_backuppath' does not exist."
         else
-            echo "Starting backup of '$conf_sourcepath'."
+            echo "Starting backup of '$conf_sourcepath' to '$conf_backuppath'."
 
             if [ ! -f "$conf_backuppath"/.inprogress.stamp ]; then
                 echo $g_timestamp > "$conf_backuppath"/.inprogress.stamp
