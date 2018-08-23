@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# (c) 2015, Oliver Reiche <oliver.reiche@gmail.com>
+# (c) 2018, Oliver Reiche <oliver.reiche@gmail.com>
 
 # Stages for storing snapshots (ascending interval length)
 conf_stages=(
