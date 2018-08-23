@@ -134,12 +134,15 @@ function createInit() {
     fi
 
     if [ -d "$conf_backuppath"/$init.1 ]; then
-        echo "  Creating hard copy from previous backup."
+        echo "  Creating hard copy from previous backup." \
+            | tee "$conf_backuppath"/backup.log
         if [[ $OSTYPE == *darwin* ]]; then
             cd "$conf_backuppath"/$init.1
-            find . -print | cpio -pdlm "$conf_backuppath"/$init.0 2>/dev/null
+            find . -print | cpio -pdlm "$conf_backuppath"/$init.0 \
+                &>>"$conf_backuppath"/backup.log
         else
-            cp -alu "$conf_backuppath"/$init.1/. "$conf_backuppath"/$init.0
+            cp -alu "$conf_backuppath"/$init.1/. "$conf_backuppath"/$init.0 \
+                &>>"$conf_backuppath"/backup.log
         fi
     fi
 
@@ -176,13 +179,16 @@ function createInit() {
     cmd=$cmd' '$excluded
     cmd=$cmd' "'$conf_sourcepath'"/'
     cmd=$cmd' "'$conf_backuppath'"/'$init'.0/'
+    cmd=$cmd' &>>"'$conf_backuppath'"/backup.log'
 
-    echo "  Running rsync to create the actual backup."
+    echo "  Running rsync to create the actual backup." \
+        | tee -a "$conf_backuppath"/backup.log
     eval $cmd
 
     local retval=$?
     if [ "$retval" != "0" ]; then
         echo "  WARNING: rysnc returned exit code '$retval'."
+        echo "           For more details see '$conf_backuppath/backup.log'."
     fi
 
     return $retval
