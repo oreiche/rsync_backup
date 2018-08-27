@@ -84,7 +84,7 @@ function createStage() {
         echo "Creating new snapshot for stage '$curr'."
         if [ -d "$conf_backuppath"/$curr.1 ]; then
           mv -f "$conf_backuppath"/$curr.1 "$conf_backuppath"/$curr.del
-          rm -rf "$conf_backuppath"/$curr.del &
+          rm -rf "$conf_backuppath"/$curr.del 2>/dev/null &
         fi
         mv "$conf_backuppath"/$last "$conf_backuppath"/$curr.1 2>/dev/null
     fi
@@ -105,7 +105,7 @@ function shiftStage() {
         echo "Shifting snapshots of stage '$curr'."
         if [ -d "$conf_backuppath"/$curr.$i ]; then
           mv -f "$conf_backuppath"/$curr.$i "$conf_backuppath"/$curr.del
-          rm -rf "$conf_backuppath"/$curr.del &
+          rm -rf "$conf_backuppath"/$curr.del 2>/dev/null &
         fi
         while [ $i -gt 1 ]; do
             mv "$conf_backuppath"/$curr.$(($i-1)) \
@@ -275,7 +275,7 @@ function main() {
                 fi
             else
                 echo "Recovering interrupted snapshot for initial stage."
-                rm -rf "$conf_backuppath"/*.del &
+                rm -rf "$conf_backuppath"/*.del 2>/dev/null &
                 resetTimestamp 0
                 createInit
                 retval=$?
