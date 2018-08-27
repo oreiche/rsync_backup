@@ -83,8 +83,8 @@ function createStage() {
        [ "$last" != $prev.0 ]; then
         echo "Creating new snapshot for stage '$curr'."
         if [ -d "$conf_backuppath"/$curr.1 ]; then
-          mv -f "$conf_backuppath"/$curr.1 "$conf_backuppath"/$curr.del
-          rm -rf "$conf_backuppath"/$curr.del 2>/dev/null &
+            mv -f "$conf_backuppath"/$curr.1 "$conf_backuppath"/$curr.del
+            rm -rf "$conf_backuppath"/$curr.del 2>/dev/null &
         fi
         mv "$conf_backuppath"/$last "$conf_backuppath"/$curr.1 2>/dev/null
     fi
@@ -104,8 +104,8 @@ function shiftStage() {
     if [ -d "$conf_backuppath"/$curr.1 ]; then
         echo "Shifting snapshots of stage '$curr'."
         if [ -d "$conf_backuppath"/$curr.$i ]; then
-          mv -f "$conf_backuppath"/$curr.$i "$conf_backuppath"/$curr.del
-          rm -rf "$conf_backuppath"/$curr.del 2>/dev/null &
+            mv -f "$conf_backuppath"/$curr.$i "$conf_backuppath"/$curr.del
+            rm -rf "$conf_backuppath"/$curr.del 2>/dev/null &
         fi
         while [ $i -gt 1 ]; do
             mv "$conf_backuppath"/$curr.$(($i-1)) \
