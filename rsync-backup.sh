@@ -21,6 +21,19 @@ g_timestamp=$(date +%s)
 ################################################################################
 
 ##
+## @brief Print usage information.
+##
+function printUsage() {
+    echo "Usage:"
+    echo "  $0 <sourcepath> <backuppath> [excludepath1 excludepath2 ...]"
+    echo
+    echo "Example: Backup '/' to '/backup' without '/dev' '/mnt' '/tmp'"
+    echo "  $0 / /backup dev mnt tmp"
+}
+
+################################################################################
+
+##
 ## @brief Resets an existing time stamp.
 ## @param {Number} $1 Index of the stage in stages array.
 ##
@@ -285,11 +298,7 @@ function main() {
             echo "Finished backup process."
         fi
     else
-        echo "Usage:"
-        echo "  $0 <sourcepath> <backuppath> [excludepath1 excludepath2 ...]"
-        echo
-        echo "Example: Backup '/' to '/backup' without '/dev' '/mnt' '/tmp'"
-        echo "  $0 / /backup dev mnt tmp"
+        printUsage
         retval=0
     fi
 
