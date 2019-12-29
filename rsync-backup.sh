@@ -187,12 +187,12 @@ function createInit() {
     rm -f "$conf_sourcepath"/.cross-device_link_test
     rm -f "$conf_backuppath"/.cross-device_link_test
 
-    cmd='rsync -a --delete'
+    cmd='rsync -a --delete -h --info=progress2'
     cmd=$cmd' '$mkhardlink
     cmd=$cmd' '$excluded
     cmd=$cmd' "'$conf_sourcepath'"/'
     cmd=$cmd' "'$conf_backuppath'"/'$init'.0/'
-    cmd=$cmd' &>>"'$conf_backuppath'"/backup.log'
+    cmd=$cmd' 2>>"'$conf_backuppath'"/backup.log'
 
     echo "  Running rsync to create the actual backup." \
         | tee -a "$conf_backuppath"/backup.log
