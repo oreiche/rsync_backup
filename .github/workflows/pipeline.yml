@@ -1,0 +1,112 @@
+name: Build and Upload
+
+on:
+  pull_request:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - master
+
+jobs:
+  linux:
+    name: Linux
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+          pip install pyinstaller
+
+      - name: Build binary
+        run: |
+          python3 -m PyInstaller -F --distpath rsync_backup rsync_backup.py
+          cp config.json rsync_backup/
+          cp rsync_backup.py rsync_backup/
+
+      - name: Create archive
+        uses: ihiroky/archive-action@v1
+        with:
+          root_dir: rsync_backup
+          file_path: rsync_backup.tar.xz
+
+      # On failure: Upload build artifacts
+      - name: Upload build artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Linux_artifacts
+          path: '*'
+
+      # For tags: Upload as release asset
+      - name: Upload binary package
+        #if: contains(github.ref, 'refs/tags/')
+        uses: svenstaro/upload-release-action@2.2.1
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          asset_name: rsync_backup-x86_64-linux-gnu-ubuntu-20.04.tar.xz
+          file: rsync_backup.tar.xz
+          #tag: ${{ github.ref }}
+          tag: latest
+          overwrite: true
+
+  windows:
+    name: Windows
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: windows-2019
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+          pip install pyinstaller
+
+      - name: Build binary
+        run: |
+          python -m PyInstaller -F -c --distpath rsync_backup rsync_backup.py
+          cp config.json rsync_backup/
+          cp rsync_backup.py rsync_backup/
+
+      # On failure: Upload build artifacts
+      - name: Upload build artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Linux_artifacts
+          path: '*'
+
+      - name: Create archive
+        uses: ihiroky/archive-action@v1
+        with:
+          root_dir: rsync_backup
+          file_path: rsync_backup.zip
+
+      # For tags: Upload as release asset
+      - name: Upload binary package
+        #if: contains(github.ref, 'refs/tags/')
+        uses: svenstaro/upload-release-action@2.2.1
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          asset_name: rsync_backup-win64.zip
+          file: rsync_backup.zip
+          #tag: ${{ github.ref }}
+          tag: latest
+          overwrite: true
