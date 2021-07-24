@@ -1,0 +1,20 @@
+{
+  "interval": 86400,
+  "stages": [{
+      "name": "day",
+      "keep": 7
+    },
+    {
+      "name": "week",
+      "keep": 4
+    },
+    {
+      "name": "month",
+      "keep": 12
+    },
+    {
+      "name": "year",
+      "keep": 3
+    }
+  ]
+}
